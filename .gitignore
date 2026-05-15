@@ -1,0 +1,32 @@
+# Compilação e Build
+*.class
+*.jar
+*.war
+*.ear
+target/
+build/
+.gradle/
+.settings/
+.classpath
+.project
+.data
+.vscode
+
+# IDEs (IntelliJ, Eclipse, NetBeans)
+.idea/
+*.iml
+*.iws
+.settings/
+.metadata/
+.springBeans
+
+# Logs
+*.log
+
+# Arquivos de Sistema
+.DS_Store
+Thumbs.db
+
+# Configurações de usuário/segurança
+*.properties.local
+.env

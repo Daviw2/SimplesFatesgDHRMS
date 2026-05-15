@@ -24,47 +24,37 @@ public class CalculoDeFolhaService implements ServidorDeCalculoFolhaInterface {
             int offset = 0;
             int limit = 50;
             List<SalarioDto> salarios;
-            // do {
-                salarios = stub.listarSalarios(limit, offset);
-                for (SalarioDto salarioDto : salarios) {
-                    ReciboDto recibo = calcularReciboDePagamento(salarioDto.getIdFuncionario(), mes, ano, descontos);
-                    folha.addRecibo(recibo);
-                }
-                offset++;
-            // } while (salarios.size() > 0);
+            
+            salarios = stub.listarSalarios(limit, offset);
+            for (SalarioDto salarioDto : salarios) {
+                // CORREÇÃO AQUI: Passamos o objeto salarioDto direto para não buscar no banco de novo
+                ReciboDto recibo = processarRecibo(salarioDto, mes, ano, descontos);
+                folha.addRecibo(recibo);
+            }
             return folha;
         } catch (Exception e) {
-            System.out.println(e.getMessage());
             e.printStackTrace();
             return null;
         }
     }
 
+    // Método novo para evitar latência (Atividade 4)
+    private ReciboDto processarRecibo(SalarioDto salarioBrutoAnual, byte mes, short ano, HashMap<String, Double> descontos) {
+        double salarioBruto = salarioBrutoAnual.getValor() / 12;
+        var recibo = new ReciboDto(mes, ano, salarioBrutoAnual.getIdFuncionario(), new SalarioDto(salarioBrutoAnual.getIdFuncionario(), salarioBruto));
+
+        descontos.forEach((k, v) -> recibo.addDesconto(k, v));
+        recibo.setSalarioLiquido(calcularSalarioLiquido(salarioBruto, descontos));
+        return recibo;
+    }
+
     @Override
-    public ReciboDto calcularReciboDePagamento(int idFuncionario, byte mesReferencia, short anoReferencia,
-            HashMap<String, Double> descontos) {
+    public ReciboDto calcularReciboDePagamento(int idFuncionario, byte mesReferencia, short anoReferencia, HashMap<String, Double> descontos) {
         try {
             SalarioDto salarioBrutoAnual = stub.obterSalarioPorId(idFuncionario);
-            if (salarioBrutoAnual == null)
-                throw new Exception("Salario não encontrado para o ID:" + idFuncionario);
-
-            double salarioBruto = salarioBrutoAnual.getValor() / 12;
-            var recibo = new ReciboDto(
-                    mesReferencia,
-                    anoReferencia,
-                    idFuncionario,
-                    new SalarioDto(idFuncionario, salarioBruto));
-
-            descontos.forEach((k, v) -> {
-                recibo.addDesconto(k, v);
-            });
-
-            double salarioLiquido = calcularSalarioLiquido(salarioBruto, descontos);
-            recibo.setSalarioLiquido(salarioLiquido);
-
-            return recibo;
+            if (salarioBrutoAnual == null) throw new Exception("Salario nao encontrado");
+            return processarRecibo(salarioBrutoAnual, mesReferencia, anoReferencia, descontos);
         } catch (Exception e) {
-            System.out.println(e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -74,17 +64,13 @@ public class CalculoDeFolhaService implements ServidorDeCalculoFolhaInterface {
     public double calcularSalarioLiquido(double salarioBruto, HashMap<String, Double> descontos) {
         var salarioLiquido = salarioBruto;
         for (var desconto : descontos.values()) {
-            var valorDesconto = salarioBruto * (desconto / 100d);
-            salarioLiquido -= valorDesconto;
+            salarioLiquido -= (salarioBruto * (desconto / 100d));
         }
         return salarioLiquido;
     }
 
     @Override
-    public FolhaDto calcularFolhaDePagamentoDoDepartamento(String arg0, byte arg1, short arg2,
-            HashMap<String, Double> arg3) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'calcularFolhaDePagamentoDoDepartamento'");
+    public FolhaDto calcularFolhaDePagamentoDoDepartamento(String arg0, byte arg1, short arg2, HashMap<String, Double> arg3) {
+        throw new UnsupportedOperationException("Unimplemented method");
     }
-
 }

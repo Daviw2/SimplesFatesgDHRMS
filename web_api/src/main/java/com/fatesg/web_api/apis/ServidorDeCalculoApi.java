@@ -19,12 +19,31 @@ public class ServidorDeCalculoApi implements ClienteDeCalculoFolhaInterface {
     private PrintWriter saida;
     private BufferedReader entrada;
 
+    // --- LÓGICA DO LOAD BALANCER (Atividade 3) ---
+    private static int contadorRequisicao = 0;
+    // ----------------------------------------------
+
     public ServidorDeCalculoApi() {
         super();
     }
 
     private void conectar() throws IOException {
-        this.cliente = new Socket(JsonRPCConfig.JSON_RPC_SERVER_HOST, (int) JsonRPCConfig.JSON_RPC_SERVER_PORT);
+        // Implementação do Load Balancer Simples (Alterna entre portas)
+        int portaAlvo;
+        
+        if (contadorRequisicao % 2 == 0) {
+            portaAlvo = 1198; // Primeiro servidor
+        } else {
+            portaAlvo = 1199; // Segundo servidor
+        }
+        
+        // Incrementa para a próxima requisição usar o outro servidor
+        contadorRequisicao++;
+
+        System.out.println("LoadBalancer: Enviando requisição para o servidor na porta: " + portaAlvo);
+
+        // Usamos o HOST da config, mas a porta é definida pelo nosso balanceador
+        this.cliente = new Socket(JsonRPCConfig.JSON_RPC_SERVER_HOST, portaAlvo);
         this.saida = new PrintWriter(cliente.getOutputStream(), true);
         this.entrada = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
     }
